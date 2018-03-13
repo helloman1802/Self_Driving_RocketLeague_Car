@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/malachi/Documents/Self_Driving_RocketLeague_Car/rl-car-0.001-alexnetv2-8-epochs.model"
+all_model_checkpoint_paths: "/home/malachi/Documents/Self_Driving_RocketLeague_Car/rl-car-0.001-alexnetv2-8-epochs.model"
