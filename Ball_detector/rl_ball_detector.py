@@ -5,13 +5,13 @@ import sys
 import tarfile
 import tensorflow as tf
 import zipfile
-
 from collections import defaultdict
 from io import StringIO
 import time
 from PIL import Image
 import mss
 import cv2
+import pyautogui as gui
 
 
 # This is the path to the Tensorflow object detection API
@@ -24,8 +24,6 @@ from utils import label_map_util
 
 from utils import visualization_utils as vis_util
 
-
-# Model preparation 
 
 # Variables
 MODEL_NAME = 'ball_graph'
@@ -53,18 +51,19 @@ with detection_graph.as_default():
 # ## Loading label map
 # Label maps map indices to category names, so that when our convolution network predicts `5`, we know that this corresponds to `airplane`.  Here we use internal utility functions, but anything that returns a dictionary mapping integers to appropriate string labels would be fine
 
-
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
+
+  
 
 def finder(show_image):
   with detection_graph.as_default():
     with tf.Session(graph=detection_graph) as sess:
       with mss.mss() as sct:
         # Part of the screen to capture
-        monitor = {'top': 30, 'left': 0, 'width': 800, 'height': 600}
+        monitor = {'top': 20, 'left': 0, 'width': 800, 'height': 600}
         while True:
           last_time = time.time()
           image = sct.grab(monitor)
@@ -96,13 +95,61 @@ def finder(show_image):
               use_normalized_coordinates=True,
               line_thickness=8)
           
+
+          ball_dict = {}
+          for i, b in enumerate(boxes[0]):
+            if classes[0][i] == 1:
+              if scores[0][i] > 0.5:
+
+                mid_x = (boxes[0][i][3] + boxes[0][i][1]) / 2
+                mid_y = (boxes[0][i][2] + boxes[0][i][0]) / 2
+                
+                apx_distance = round( (1-(boxes[0][i][3] - boxes[0][i][1]))**4, 3)
+                ball_dict[apx_distance] = [mid_x, mid_y, scores[0][i]]
+                cv2.putText(image_np, '{}'.format(apx_distance), (int(mid_x*800), int(mid_y*600)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,255), 2)
+
+                x_move = mid_x - 0.5
+                y_move = mid_y - 0.5
+                
+                get_to_x = x_move/0.5
+                time.sleep(0.05)
+                
+                if get_to_x > 0.15:
+                  
+                  gui.keyDown('d')
+                  time.sleep(0.01)
+                  gui.keyUp('d')
+                elif get_to_x < -0.15:
+                  
+                  gui.keyDown('a')
+                  time.sleep(0.01)
+                  gui.keyUp('a')
+                
+                  
+
+                
+                print(get_to_x)
+
+                """
+                if apx_distance <= 0.5:
+                  if mid_x > 0.3 and mid_x < 0.7:
+                    cv2.putText(image_np, 'Hitting ball', (int(mid_x*800)-50, int(mid_y*600)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 3)
+                """
+
+          if len(ball_dict) > 0:
+            closest = sorted(ball_dict.keys())[0]
+            ball_choice = ball_dict[closest]
+            
           
-          print('fps: {0}'.format(1 / (time.time()-last_time)))
+          #print('fps: {0}'.format(1 / (time.time()-last_time)))
           if show_image == 1:
             cv2.imshow('object detection', image_np)
-            print('fps: {0}'.format(1 / (time.time()-last_time)))
+            #print('fps: {0}'.format(1 / (time.time()-last_time)))
             if cv2.waitKey(25) & 0xFF == ord('q'):
               cv2.destroyAllWindows()
               break
+for i in range(4):
+  time.sleep(1)
 
+gui.keyDown('w')
 finder(1)
